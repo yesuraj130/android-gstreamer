@@ -26,12 +26,12 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Setup Android SDK and NDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android NDK and CMake
         run: |
-          sdkmanager --install "ndk;${{ env.NDK_VERSION }}" "cmake;3.22.1"
+          echo "Accepting Android SDK licenses..."
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          echo "Installing NDK ${{ env.NDK_VERSION }} and CMake 3.22.1..."
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}" "cmake;3.22.1"
 
       - name: Cache GStreamer Android SDK
         id: cache-gstreamer
