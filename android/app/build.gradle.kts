@@ -8,6 +8,7 @@ val gstRootEnv = System.getenv("GSTREAMER_ROOT_ANDROID") ?: ""
 android {
     namespace = "com.gstlauncher.app"
     compileSdk = 34
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "com.gstlauncher.app"
@@ -19,11 +20,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
-            cmake {
-                cppFlags("-std=c++17 -Wall")
+            ndkBuild {
                 arguments(
-                    "-DANDROID_STL=c++_shared",
-                    "-DGSTREAMER_ROOT_ANDROID=$gstRootEnv"
+                    "GSTREAMER_ROOT_ANDROID=$gstRootEnv",
+                    "APP_STL=c++_shared"
                 )
             }
         }
@@ -48,9 +48,8 @@ android {
     }
 
     externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+        ndkBuild {
+            path = file("src/main/jni/Android.mk")
         }
     }
 
@@ -82,7 +81,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 
-    // Optional: GStreamer Android SDK helper jar if present
+    // GStreamer Android SDK helper jar if present
     fileTree(mapOf("dir" to "$gstRootEnv/share/gst-android/ndk-build", "include" to listOf("*.jar"))).let {
         compileOnly(it)
     }

@@ -30,12 +30,9 @@ void GstPipelineRunner::init(JNIEnv* env, jobject context) {
 
     env->GetJavaVM(&mJavaVM);
 
-    GError* error = nullptr;
-    if (!gst_init_check(nullptr, nullptr, &error)) {
-        LOGE("Failed to initialize GStreamer: %s", error ? error->message : "unknown error");
-        if (error) g_error_free(error);
-        return;
-    }
+    // Call official GStreamer Android SDK initializer which registers all static plugins
+    LOGI("Calling gst_android_init...");
+    gst_android_init(env, context);
 
     mGstInitialized = true;
     LOGI("GStreamer initialized successfully. Version: %s", gst_version_string());
@@ -95,7 +92,6 @@ bool GstPipelineRunner::playPipeline(const std::string& pipelineDesc) {
         return false;
     }
 
-    // Attach native window to video sink if available
     if (mNativeWindow) {
         GstElement* video_sink = gst_bin_get_by_interface(GST_BIN(mPipeline), GST_TYPE_VIDEO_OVERLAY);
         if (video_sink) {
@@ -106,7 +102,6 @@ bool GstPipelineRunner::playPipeline(const std::string& pipelineDesc) {
         }
     }
 
-    // Watch pipeline bus
     GstBus* bus = gst_pipeline_get_bus(GST_PIPELINE(mPipeline));
     mBusWatchId = gst_bus_add_watch(bus, bus_callback, this);
     gst_object_unref(bus);
@@ -235,7 +230,6 @@ void GstPipelineRunner::stopRtspServer() {
     }
 }
 
-// Helpers for invoking Kotlin methods on background threads
 void GstPipelineRunner::notifyKotlinState(const char* stateName) {
     if (!mJavaVM || !mBridgeObject || !mMethodOnStateChanged) return;
     JNIEnv* env = nullptr;
@@ -290,7 +284,7 @@ void GstPipelineRunner::notifyRtspStatus(bool running, const char* message) {
     if (attached) mJavaVM->DetachCurrentThread();
 }
 
-// JNI C Function Implementations
+// JNI exports
 extern "C" {
 
 JNIEXPORT void JNICALL
