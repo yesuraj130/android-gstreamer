@@ -37,9 +37,9 @@ jobs:
           echo "Installing NDK ${{ env.NDK_VERSION }} and CMake 3.22.1..."
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}" "cmake;3.22.1"
 
-      - name: Cache GStreamer Android SDK
+      - name: Restore GStreamer Android SDK Cache
         id: cache-gstreamer
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.GST_SDK_DIR }}
           key: gstreamer-android-${{ env.GST_VERSION }}-universal
@@ -55,15 +55,26 @@ jobs:
           tar -xf /tmp/gstreamer-android.tar.xz -C ${{ env.GST_SDK_DIR }}
           rm -f /tmp/gstreamer-android.tar.xz
 
-      - name: Grant execute permission for Gradle wrapper
-        run: |
-          chmod +x android/gradlew
+      - name: Save GStreamer Cache Immediately
+        if: steps.cache-gstreamer.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.GST_SDK_DIR }}
+          key: gstreamer-android-${{ env.GST_VERSION }}-universal
 
       - name: Build Debug APK
         run: |
           cd android
           export GSTREAMER_ROOT_ANDROID="${{ env.GST_SDK_DIR }}"
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/${{ env.NDK_VERSION }}"
+          
+          # Ensure Gradle wrapper jar exists
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Generating Gradle wrapper jar..."
+            gradle wrapper --gradle-version 8.7
+          fi
+          chmod +x gradlew
+          
           ./gradlew assembleDebug --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: Upload APK Artifact
