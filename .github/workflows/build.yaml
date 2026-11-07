@@ -55,6 +55,19 @@ jobs:
           tar -xf /tmp/gstreamer-android.tar.xz -C ${{ env.GST_SDK_DIR }}
           rm -f /tmp/gstreamer-android.tar.xz
 
+      - name: Patch GStreamer NDK tools.mk for Clang linker
+        run: |
+          echo "Patching tools.mk in GStreamer SDK to correctly format linker library flags..."
+          find ${{ env.GST_SDK_DIR }} -name "tools.mk" -exec sed -i 's/\$(eval __libtool.link.shared_libs += \$1)/\$(eval __libtool.link.shared_libs += -l\$(patsubst -l%,%,\$1))/' {} +
+          
+          # Ensure stub libgstrsworkspace.a exists if referenced by Rust workspace .la files
+          for arch in arm64 armv7 x86 x86_64; do
+            if [ -d "${{ env.GST_SDK_DIR }}/$arch/lib" ] && [ ! -f "${{ env.GST_SDK_DIR }}/$arch/lib/libgstrsworkspace.a" ]; then
+              echo "Creating stub libgstrsworkspace.a for $arch"
+              ar cr "${{ env.GST_SDK_DIR }}/$arch/lib/libgstrsworkspace.a"
+            fi
+          done
+
       - name: Save GStreamer Cache Immediately
         if: steps.cache-gstreamer.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
