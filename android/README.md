@@ -50,8 +50,8 @@ Pushing to your GitHub repository triggers `.github/workflows/build.yaml` (or `b
 4. Uploads the generated `gst-launcher-debug-apk` as a workflow artifact.
 
 ### Local Build in Android Studio
-1. Download the [GStreamer Android Universal SDK](https://gstreamer.freedesktop.org/data/pkg/android/) (e.g. version 1.24.12 or 1.28).
-2. Unpack to a directory (e.g. `/opt/gstreamer-android` or `C:\gstreamer-android`).
+1. Download the [GStreamer Android Universal SDK](https://gstreamer.freedesktop.org/data/pkg/android/) (version `1.28.8`).
+2. Unpack to a directory (e.g. `/opt/gstreamer-android` or `/home/runner/gstreamer-android`).
 3. Set the environment variable:
    ```bash
    export GSTREAMER_ROOT_ANDROID=/opt/gstreamer-android

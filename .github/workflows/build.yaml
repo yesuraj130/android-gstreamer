@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GST_VERSION: "1.24.12"
+      GST_VERSION: "1.28.8"
       NDK_VERSION: "26.3.11579264"
       GST_SDK_DIR: "/home/runner/gstreamer-android"
 
