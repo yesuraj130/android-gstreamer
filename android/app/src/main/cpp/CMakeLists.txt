@@ -13,7 +13,18 @@ if(NOT DEFINED GSTREAMER_ROOT_ANDROID OR "${GSTREAMER_ROOT_ANDROID}" STREQUAL ""
     endif()
 endif()
 
-set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/${ANDROID_ABI}")
+# Locate architecture-specific directory (GStreamer uses arm64/armv7/x86_64)
+if(EXISTS "${GSTREAMER_ROOT_ANDROID}/${ANDROID_ABI}")
+    set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/${ANDROID_ABI}")
+elseif("${ANDROID_ABI}" STREQUAL "arm64-v8a" AND EXISTS "${GSTREAMER_ROOT_ANDROID}/arm64")
+    set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/arm64")
+elseif("${ANDROID_ABI}" STREQUAL "armeabi-v7a" AND EXISTS "${GSTREAMER_ROOT_ANDROID}/armv7")
+    set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/armv7")
+elseif("${ANDROID_ABI}" STREQUAL "armeabi-v7a" AND EXISTS "${GSTREAMER_ROOT_ANDROID}/arm")
+    set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/arm")
+else()
+    set(GST_ARCH_DIR "${GSTREAMER_ROOT_ANDROID}/${ANDROID_ABI}")
+endif()
 message(STATUS "GStreamer Android SDK ABI path: ${GST_ARCH_DIR}")
 
 # Include paths for GStreamer 1.0, GLib, and GObject

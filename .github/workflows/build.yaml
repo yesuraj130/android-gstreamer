@@ -15,6 +15,7 @@ jobs:
     env:
       GST_VERSION: "1.24.12"
       NDK_VERSION: "26.3.11579264"
+      GST_SDK_DIR: "/home/runner/gstreamer-android"
 
     steps:
       - name: Checkout repository
@@ -25,6 +26,9 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Install Android NDK and CMake
         run: |
@@ -37,37 +41,34 @@ jobs:
         id: cache-gstreamer
         uses: actions/cache@v4
         with:
-          path: /opt/gstreamer-android
+          path: ${{ env.GST_SDK_DIR }}
           key: gstreamer-android-${{ env.GST_VERSION }}-universal
 
       - name: Download and unpack GStreamer Android SDK
         if: steps.cache-gstreamer.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /opt/gstreamer-android
+          mkdir -p ${{ env.GST_SDK_DIR }}
           echo "Downloading GStreamer ${{ env.GST_VERSION }} Android universal SDK..."
-          curl -L -o /tmp/gstreamer-android.tar.xz \
+          curl -fL --retry 3 --connect-timeout 30 -o /tmp/gstreamer-android.tar.xz \
             https://gstreamer.freedesktop.org/data/pkg/android/${{ env.GST_VERSION }}/gstreamer-1.0-android-universal-${{ env.GST_VERSION }}.tar.xz
-          tar -xf /tmp/gstreamer-android.tar.xz -C /opt/gstreamer-android
-          rm /tmp/gstreamer-android.tar.xz
+          echo "Unpacking GStreamer SDK..."
+          tar -xf /tmp/gstreamer-android.tar.xz -C ${{ env.GST_SDK_DIR }}
+          rm -f /tmp/gstreamer-android.tar.xz
 
       - name: Grant execute permission for Gradle wrapper
         run: |
-          cd android
-          chmod +x gradlew || true
+          chmod +x android/gradlew
 
       - name: Build Debug APK
-        env:
-          GSTREAMER_ROOT_ANDROID: /opt/gstreamer-android
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
         run: |
           cd android
-          if [ ! -f gradlew ]; then
-            gradle wrapper
-          fi
-          ./gradlew assembleDebug --stacktrace
+          export GSTREAMER_ROOT_ANDROID="${{ env.GST_SDK_DIR }}"
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/${{ env.NDK_VERSION }}"
+          ./gradlew assembleDebug --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: gst-launcher-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
